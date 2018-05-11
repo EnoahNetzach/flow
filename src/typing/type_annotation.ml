@@ -364,6 +364,85 @@ let rec convert cx tparams_map = Ast.Type.(function
     | _ ->
       error_type cx loc (FlowError.ETypeParamMinArity (loc, 1)))
 
+  | "$XXX" ->
+    check_type_arg_arity cx loc targs 1 (fun () ->
+      let converter _ _ = Ast.Type.(function
+        | _, StringLiteral { Ast.StringLiteral.value; _ } -> value
+        | _, Generic { Generic.id = Generic.Identifier.Unqualified (_, name); _ } ->
+          (match name with
+          | _ when SMap.mem name tparams_map -> "in-scope type vars"
+          | _ -> "...")
+        | _ -> assert false
+      ) in
+      let str = List.hd (Option.value_map targs
+        ~default: [""]
+        ~f:(List.map (converter cx tparams_map))) in
+      let reason = mk_reason (RStringLit str) loc in
+      DefT (reason, SingletonStrT str)
+    )
+
+      (* let str = match convert_type_params () with
+      | [DefT (_, SingletonStrT str)] ->
+          (Utils_js.prerr_endlinef "$XXX [DefT (_, SingletonStrT %s)]" str);
+          str
+      | [AnnotT (OpenT (r, _), _)] ->
+          let str = match (desc_of_reason r) with
+          | RStringLit x -> x
+          | RType t -> Printf.sprintf "type %s" t
+          | _ -> "???" in
+          (Utils_js.prerr_endlinef "$XXX [AnnotT (OpenT (ReasonDesc %s), _)]" str);
+          str
+      | _ ->
+          let str = "..." in
+          (Utils_js.prerr_endlinef "$XXX %s" str);
+          str in
+      let reason = mk_reason (RType "$XXX") loc in
+      DefT (reason, SingletonStrT str)
+    ) *)
+
+  (* | "$Concat" ->
+    check_type_arg_arity cx loc targs 2 (fun () ->
+      (* let string_of_reason_desc = string_of_desc desc_of_reason in *)
+      let str = match convert_type_params () with
+      | [DefT (_, SingletonStrT str1); DefT (_, SingletonStrT str2)] -> str1 ^ str2
+      | [AnnotT (OpenT (reas1, _), _); DefT (_, SingletonStrT str2)] ->
+          let str1 = string_of_desc (desc_of_reason reas1) in
+          (Utils_js.prerr_endlinef "$Concat str1 %s]" str1);
+          (Utils_js.prerr_endlinef "$Concat str %s]" (str1 ^ str2));
+          str1 ^ str2
+      | [DefT (_, SingletonStrT str1); AnnotT (OpenT (reas2, _), _)] ->
+          let str2 = string_of_desc (desc_of_reason reas2) in
+          (Utils_js.prerr_endlinef "$Concat str2 %s]" str2);
+          (Utils_js.prerr_endlinef "$Concat str %s]" (str1 ^ str2));
+          str1 ^ str2
+      | [AnnotT (OpenT (reas1, _), _); AnnotT (OpenT (reas2, _), _)] ->
+          let str1 = string_of_desc (desc_of_reason reas1) in
+          let str2 = string_of_desc (desc_of_reason reas2) in
+          (Utils_js.prerr_endlinef "$Concat str1 %s]" str1);
+          (Utils_js.prerr_endlinef "$Concat str2 %s]" str2);
+          (Utils_js.prerr_endlinef "$Concat str %s]" (str1 ^ str2));
+          str1 ^ str2
+      | _ -> assert false in
+      let reason = mk_reason (RStringLit str) loc in
+      DefT (reason, SingletonStrT str)
+    ) *)
+
+(* | loc, Union (t0, t1, ts) ->
+  let t0 = convert cx tparams_map t0 in
+  let t1 = convert cx tparams_map t1 in
+  let ts = List.map (convert cx tparams_map) ts in
+  let rep = UnionRep.make t0 t1 ts in
+  DefT (mk_reason RUnionType loc, UnionT rep) *)
+
+  (* | "$UnionMap" ->
+    check_type_arg_arity cx loc targs 2 (fun () ->
+      let t1, t2 = match convert_type_params () with
+      | [t1; t2] -> t1, t2
+      | _ -> assert false in
+      let reason = mk_reason RTupleMap loc in
+      EvalT (t1, TypeDestructorT (use_op reason, reason, TypeMap (TupleMap t2)), mk_id ())
+    ) *)
+
   | "$TupleMap" ->
     check_type_arg_arity cx loc targs 2 (fun () ->
       let t1, t2 = match convert_type_params () with
